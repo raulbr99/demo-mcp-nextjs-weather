@@ -14,6 +14,7 @@ import { WeatherComparison } from "./components/WeatherComparison";
 import { LoadingSpinner } from "./components/LoadingSpinner";
 import { ErrorMessage } from "./components/ErrorMessage";
 import { WeatherQuery } from "./components/WeatherQuery";
+import { DebugPanel } from "./components/DebugPanel";
 
 interface WeatherResult {
   type?: "current_weather" | "forecast" | "comparison" | "error";
@@ -55,9 +56,11 @@ export default function Home() {
   const weatherData = toolOutput?.structuredContent;
 
   // Debug: Log the tool output to help troubleshoot
-  if (typeof window !== "undefined" && toolOutput) {
+  if (typeof window !== "undefined") {
+    console.log("Is ChatGPT App:", isChatGptApp);
     console.log("Tool Output:", toolOutput);
     console.log("Weather Data:", weatherData);
+    console.log("Display Mode:", displayMode);
   }
 
   const renderWeatherContent = () => {
@@ -253,6 +256,13 @@ export default function Home() {
           </div>
         )}
       </main>
+
+      <DebugPanel
+        isChatGptApp={isChatGptApp}
+        toolOutput={toolOutput}
+        weatherData={weatherData}
+        displayMode={displayMode}
+      />
     </div>
   );
 }
