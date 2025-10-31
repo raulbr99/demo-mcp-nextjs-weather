@@ -239,15 +239,15 @@ export async function getHourlyForecast(
 
   const { lat, lon, name, country } = geoData[0];
 
-  // Now get hourly forecast using One Call API 3.0
-  const url = `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&units=${unitParam}&exclude=minutely,daily,alerts&appid=${apiKey}`;
+  // Now get hourly forecast using One Call API 2.5 (free tier with hourly data)
+  const url = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&units=${unitParam}&exclude=minutely,daily,alerts&appid=${apiKey}`;
 
   const response = await fetch(url, {
     next: { revalidate: 1800 } // Cache for 30 minutes
   });
 
   if (!response.ok) {
-    // If One Call 3.0 fails, fall back to forecast API
+    // If One Call 2.5 fails, fall back to forecast API
     const fallbackUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(location)}&units=${unitParam}&appid=${apiKey}`;
     const fallbackResponse = await fetch(fallbackUrl, {
       next: { revalidate: 1800 }

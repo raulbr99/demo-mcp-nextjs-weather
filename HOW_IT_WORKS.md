@@ -351,11 +351,28 @@ if (weatherData.type === "air_quality") {
 4. **structuredContent** = What MCP server returns (becomes toolOutput)
 5. **widgetAccessible: true** = REQUIRED for widget to show!
 
+## API Usage Notes
+
+### Hourly Forecast
+The hourly forecast feature uses **One Call API 2.5** which provides:
+- ✅ Hourly data (not 3-hour intervals)
+- ✅ Up to 48 hours of forecast
+- ✅ **FREE** with standard API key
+- ⚠️ API 2.5 is being deprecated but still works
+
+**Fallback**: If One Call API 2.5 fails, the app automatically falls back to the Forecast API which provides data every 3 hours.
+
+**Future**: If One Call API 2.5 stops working, you can:
+1. Use One Call API 3.0 (requires paid subscription)
+2. Use alternative APIs like WeatherAPI.com
+3. Accept 3-hour intervals from Forecast API
+
 ## Resources
 
 - OpenAI Apps SDK: https://developers.openai.com/apps-sdk/
 - MCP Protocol: https://modelcontextprotocol.io/
 - OpenWeatherMap API: https://openweathermap.org/api
+- One Call API 2.5: https://openweathermap.org/api/one-call-api
 - Vercel Deployment: https://vercel.com/docs
 
 ## Support
