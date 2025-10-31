@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   useWidgetProps,
@@ -49,8 +50,27 @@ export default function Home() {
   const requestDisplayMode = useRequestDisplayMode();
   const isChatGptApp = useIsChatGptApp();
 
+  // Loading state: true when in ChatGPT and waiting for data
+  const [isLoading, setIsLoading] = useState(false);
+
   // The toolOutput directly contains the weather data, not under structuredContent
   const weatherData = toolOutput as WeatherResult | null;
+
+  // Handle loading state when in ChatGPT
+  useEffect(() => {
+    if (isChatGptApp) {
+      // When we're in ChatGPT but don't have data yet, show loading
+      if (!weatherData) {
+        setIsLoading(true);
+      } else {
+        // Once data arrives, hide loading
+        setIsLoading(false);
+      }
+    } else {
+      // Not in ChatGPT, never show loading spinner
+      setIsLoading(false);
+    }
+  }, [isChatGptApp, weatherData]);
 
   // Debug: Log the tool output to help troubleshoot
   if (typeof window !== "undefined") {
@@ -69,6 +89,18 @@ export default function Home() {
   }
 
   const renderWeatherContent = () => {
+    // Show loading spinner when waiting for data in ChatGPT
+    if (isLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 space-y-4">
+          <LoadingSpinner />
+          <p className="text-slate-600 dark:text-slate-400 text-sm">
+            Fetching weather data...
+          </p>
+        </div>
+      );
+    }
+
     if (!weatherData) {
       return (
         <div className="text-center space-y-4">
