@@ -54,9 +54,17 @@ export default function Home() {
   const weatherData = toolOutput?.structuredContent;
 
   // Debug: Log the tool output to help troubleshoot
-  if (typeof window !== "undefined" && toolOutput) {
-    console.log("Tool Output:", toolOutput);
-    console.log("Weather Data:", weatherData);
+  if (typeof window !== "undefined") {
+    console.log("=== DEBUG INFO ===");
+    console.log("isChatGptApp:", isChatGptApp);
+    console.log("window.openai exists:", !!window.openai);
+    console.log("toolOutput:", toolOutput);
+    console.log("weatherData:", weatherData);
+    console.log("displayMode:", displayMode);
+    if (window.openai) {
+      console.log("window.openai.toolOutput:", (window.openai as any).toolOutput);
+    }
+    console.log("==================");
   }
 
   const renderWeatherContent = () => {

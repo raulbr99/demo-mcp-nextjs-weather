@@ -12,6 +12,33 @@ const getAppsSdkCompatibleHtml = async (baseUrl: string, path: string) => {
   return await result.text();
 };
 
+const injectDataIntoHtml = (html: string, data: any) => {
+  // Inject the structured content into the HTML before the closing </head> tag
+  const injectionScript = `
+    <script>
+      // Inject tool output data into window.openai
+      if (typeof window !== 'undefined') {
+        window.openai = window.openai || {};
+        window.openai.toolOutput = ${JSON.stringify(data)};
+
+        // Dispatch event to notify the app that data is available
+        setTimeout(() => {
+          const event = new CustomEvent('openai:set_globals', {
+            detail: {
+              globals: {
+                toolOutput: ${JSON.stringify(data)}
+              }
+            }
+          });
+          window.dispatchEvent(event);
+        }, 100);
+      }
+    </script>
+  `;
+
+  return html.replace('</head>', `${injectionScript}</head>`);
+};
+
 type ContentWidget = {
   id: string;
   title: string;
@@ -180,6 +207,14 @@ const handler = createMcpHandler(async (server) => {
     async ({ location, units = "celsius" }) => {
       try {
         const weather = await getCurrentWeather(location, units);
+        const structuredData = {
+          type: "current_weather",
+          ...weather,
+          units,
+        };
+
+        console.log("[MCP] Returning weather data:", structuredData);
+
         return {
           content: [
             {
@@ -192,11 +227,7 @@ Wind Speed: ${weather.windSpeed} ${units === "celsius" ? "m/s" : "mph"}
 Pressure: ${weather.pressure} hPa`,
             },
           ],
-          structuredContent: {
-            type: "current_weather",
-            ...weather,
-            units,
-          },
+          structuredContent: structuredData,
           _meta: widgetMeta(currentWeatherWidget),
         };
       } catch (error) {
