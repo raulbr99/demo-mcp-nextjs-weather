@@ -13,8 +13,6 @@ import { ForecastCard } from "./components/ForecastCard";
 import { WeatherComparison } from "./components/WeatherComparison";
 import { LoadingSpinner } from "./components/LoadingSpinner";
 import { ErrorMessage } from "./components/ErrorMessage";
-import { WeatherQuery } from "./components/WeatherQuery";
-import { DebugPanel } from "./components/DebugPanel";
 
 interface WeatherResult {
   type?: "current_weather" | "forecast" | "comparison" | "error";
@@ -56,41 +54,41 @@ export default function Home() {
   const weatherData = toolOutput?.structuredContent;
 
   // Debug: Log the tool output to help troubleshoot
-  if (typeof window !== "undefined") {
-    console.log("Is ChatGPT App:", isChatGptApp);
+  if (typeof window !== "undefined" && toolOutput) {
     console.log("Tool Output:", toolOutput);
     console.log("Weather Data:", weatherData);
-    console.log("Display Mode:", displayMode);
   }
 
   const renderWeatherContent = () => {
     if (!weatherData) {
       return (
-        <div className="space-y-6">
-          <div className="text-center space-y-4">
-            <div className="inline-block p-4 bg-blue-100 dark:bg-blue-900 rounded-full mb-4">
-              <svg
-                className="w-16 h-16 text-blue-600 dark:text-blue-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"
-                />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-              Weather Forecast App
-            </h2>
-            <p className="text-slate-600 dark:text-slate-400 max-w-md mx-auto">
-              Get real-time weather information for any city around the world
-            </p>
+        <div className="text-center space-y-4">
+          <div className="inline-block p-4 bg-blue-100 dark:bg-blue-900 rounded-full mb-4">
+            <svg
+              className="w-16 h-16 text-blue-600 dark:text-blue-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"
+              />
+            </svg>
           </div>
-          <WeatherQuery />
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+            Weather Forecast App
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400 max-w-md">
+            Ask me about the weather in any city! Try asking:
+          </p>
+          <ul className="text-sm text-slate-600 dark:text-slate-400 space-y-2 max-w-md">
+            <li>• "What's the weather in London?"</li>
+            <li>• "Show me a 5-day forecast for Tokyo"</li>
+            <li>• "Compare weather between New York and Paris"</li>
+          </ul>
         </div>
       );
     }
@@ -197,7 +195,7 @@ export default function Home() {
       )}
 
       <main className="max-w-6xl mx-auto">
-        {!isChatGptApp && !weatherData && (
+        {!isChatGptApp && (
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 mb-6">
             <div className="flex items-center gap-3">
               <svg
@@ -214,11 +212,11 @@ export default function Home() {
               </svg>
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-blue-900 dark:text-blue-100 font-medium">
-                  Use this app standalone or connect it to ChatGPT/Claude Code
+                  This weather app is designed to work with ChatGPT.
                 </p>
                 <p className="text-sm text-blue-900 dark:text-blue-100">
-                  You can search for weather directly here, or use it as an MCP server
-                  for more natural conversation with AI assistants.
+                  Connect it to ChatGPT to get weather information through
+                  natural conversation.
                 </p>
               </div>
             </div>
@@ -256,13 +254,6 @@ export default function Home() {
           </div>
         )}
       </main>
-
-      <DebugPanel
-        isChatGptApp={isChatGptApp}
-        toolOutput={toolOutput}
-        weatherData={weatherData}
-        displayMode={displayMode}
-      />
     </div>
   );
 }
