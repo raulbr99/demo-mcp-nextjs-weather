@@ -44,14 +44,20 @@ interface WeatherResult {
 
 export default function Home() {
   const toolOutput = useWidgetProps<{
-    result?: { structuredContent?: WeatherResult };
+    structuredContent?: WeatherResult;
   }>();
   const maxHeight = useMaxHeight() ?? undefined;
   const displayMode = useDisplayMode();
   const requestDisplayMode = useRequestDisplayMode();
   const isChatGptApp = useIsChatGptApp();
 
-  const weatherData = toolOutput?.result?.structuredContent;
+  const weatherData = toolOutput?.structuredContent;
+
+  // Debug: Log the tool output to help troubleshoot
+  if (typeof window !== "undefined" && toolOutput) {
+    console.log("Tool Output:", toolOutput);
+    console.log("Weather Data:", weatherData);
+  }
 
   const renderWeatherContent = () => {
     if (!weatherData) {
