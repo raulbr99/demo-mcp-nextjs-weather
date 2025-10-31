@@ -5,6 +5,7 @@ import {
   getCurrentWeather,
   getWeatherForecast,
   compareWeather,
+  getHourlyForecast,
 } from "@/lib/weather-service";
 
 const getAppsSdkCompatibleHtml = async (baseUrl: string, path: string) => {
@@ -99,6 +100,18 @@ const handler = createMcpHandler(async (server) => {
     widgetDomain: "https://openweathermap.org",
   };
 
+  // Widget for hourly forecast
+  const hourlyWidget: ContentWidget = {
+    id: "get_hourly_forecast",
+    title: "Hourly Forecast",
+    templateUri: "ui://widget/hourly-template.html",
+    invoking: "Fetching hourly forecast...",
+    invoked: "Hourly forecast loaded",
+    html: html,
+    description: "Displays hourly weather forecast for next 24-48 hours",
+    widgetDomain: "https://openweathermap.org",
+  };
+
   // Register resources for each widget
   server.registerResource(
     "current-weather-widget",
@@ -178,6 +191,34 @@ const handler = createMcpHandler(async (server) => {
             "openai/widgetDescription": comparisonWidget.description,
             "openai/widgetPrefersBorder": true,
             "openai/widgetDomain": comparisonWidget.widgetDomain,
+          },
+        },
+      ],
+    })
+  );
+
+  server.registerResource(
+    "hourly-widget",
+    hourlyWidget.templateUri,
+    {
+      title: hourlyWidget.title,
+      description: hourlyWidget.description,
+      mimeType: "text/html+skybridge",
+      _meta: {
+        "openai/widgetDescription": hourlyWidget.description,
+        "openai/widgetPrefersBorder": true,
+      },
+    },
+    async (uri) => ({
+      contents: [
+        {
+          uri: uri.href,
+          mimeType: "text/html+skybridge",
+          text: `<html>${hourlyWidget.html}</html>`,
+          _meta: {
+            "openai/widgetDescription": hourlyWidget.description,
+            "openai/widgetPrefersBorder": true,
+            "openai/widgetDomain": hourlyWidget.widgetDomain,
           },
         },
       ],
@@ -368,6 +409,84 @@ Humidity difference: ${comparison.humidityDifference}%`,
             {
               type: "text",
               text: `Error comparing weather: ${error instanceof Error ? error.message : "Unknown error"}`,
+            },
+          ],
+          structuredContent: {
+            type: "error",
+            error: error instanceof Error ? error.message : "Unknown error",
+          },
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Tool: Get Hourly Forecast
+  server.registerTool(
+    hourlyWidget.id,
+    {
+      title: hourlyWidget.title,
+      description:
+        "Get hourly weather forecast for any city or location. Returns detailed weather data for each hour including temperature, precipitation chance, humidity, and wind speed. Perfect for planning your day.",
+      inputSchema: {
+        location: z
+          .string()
+          .describe(
+            "City name or location (e.g., 'London', 'New York', 'Tokyo')"
+          ),
+        hours: z
+          .number()
+          .min(1)
+          .max(48)
+          .default(24)
+          .describe("Number of hours to forecast (1-48, default 24)"),
+        units: z
+          .enum(["celsius", "fahrenheit"])
+          .default("celsius")
+          .describe("Temperature units to use"),
+      },
+      _meta: widgetMeta(hourlyWidget),
+    },
+    async ({ location, hours = 24, units = "celsius" }) => {
+      try {
+        const hourlyData = await getHourlyForecast(location, hours, units);
+        const unitSymbol = units === "celsius" ? "°C" : "°F";
+
+        // Create a summary for the text response
+        const firstFewHours = hourlyData.hourly.slice(0, 6);
+        const summary = firstFewHours
+          .map(
+            (h) =>
+              `${h.hour}: ${h.temperature}${unitSymbol}, ${h.description}${h.pop > 30 ? ` (${h.pop}% rain)` : ""}`
+          )
+          .join("\n");
+
+        console.log("[MCP] Returning hourly forecast data for:", location);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Hourly forecast for ${hourlyData.location}, ${hourlyData.country} (next ${hours} hours):
+
+${summary}
+${hourlyData.hourly.length > 6 ? `\n...and ${hourlyData.hourly.length - 6} more hours` : ""}`,
+            },
+          ],
+          structuredContent: {
+            type: "hourly",
+            ...hourlyData,
+            units,
+          },
+          _meta: widgetMeta(hourlyWidget),
+        };
+      } catch (error) {
+        console.error("[MCP] Error fetching hourly forecast:", error);
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error fetching hourly forecast: ${error instanceof Error ? error.message : "Unknown error"}`,
             },
           ],
           structuredContent: {

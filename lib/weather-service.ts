@@ -39,6 +39,24 @@ export interface ComparisonData {
   humidityDifference: number;
 }
 
+export interface HourlyWeather {
+  time: string;
+  hour: string;
+  temperature: number;
+  feelsLike: number;
+  description: string;
+  icon: string;
+  humidity: number;
+  windSpeed: number;
+  pop: number; // Probability of precipitation (0-100)
+}
+
+export interface HourlyForecastData {
+  location: string;
+  country: string;
+  hourly: HourlyWeather[];
+}
+
 /**
  * Converts temperature between Celsius and Fahrenheit
  */
@@ -187,5 +205,109 @@ export async function compareWeather(
  */
 export function getWeatherIconUrl(iconCode: string): string {
   return `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+}
+
+/**
+ * Fetches hourly weather forecast for a location (next 48 hours)
+ */
+export async function getHourlyForecast(
+  location: string,
+  hours: number = 24,
+  units: 'celsius' | 'fahrenheit' = 'celsius'
+): Promise<HourlyForecastData> {
+  const apiKey = process.env.OPENWEATHERMAP_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('OPENWEATHERMAP_API_KEY is not configured in environment variables');
+  }
+
+  const unitParam = units === 'celsius' ? 'metric' : 'imperial';
+
+  // First, get coordinates for the location
+  const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(location)}&limit=1&appid=${apiKey}`;
+  const geoResponse = await fetch(geoUrl);
+
+  if (!geoResponse.ok) {
+    throw new Error(`Geocoding API error: ${geoResponse.statusText}`);
+  }
+
+  const geoData = await geoResponse.json();
+
+  if (!geoData || geoData.length === 0) {
+    throw new Error(`Location "${location}" not found. Please check the city name and try again.`);
+  }
+
+  const { lat, lon, name, country } = geoData[0];
+
+  // Now get hourly forecast using One Call API 3.0
+  const url = `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&units=${unitParam}&exclude=minutely,daily,alerts&appid=${apiKey}`;
+
+  const response = await fetch(url, {
+    next: { revalidate: 1800 } // Cache for 30 minutes
+  });
+
+  if (!response.ok) {
+    // If One Call 3.0 fails, fall back to forecast API
+    const fallbackUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(location)}&units=${unitParam}&appid=${apiKey}`;
+    const fallbackResponse = await fetch(fallbackUrl, {
+      next: { revalidate: 1800 }
+    });
+
+    if (!fallbackResponse.ok) {
+      throw new Error(`Weather API error: ${fallbackResponse.statusText}`);
+    }
+
+    const fallbackData = await fallbackResponse.json();
+
+    // Process forecast API data (3-hour intervals)
+    const hourly: HourlyWeather[] = fallbackData.list
+      .slice(0, Math.min(hours / 3, 16)) // Limit to requested hours
+      .map((item: any) => {
+        const date = new Date(item.dt * 1000);
+        return {
+          time: item.dt_txt,
+          hour: date.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }),
+          temperature: Math.round(item.main.temp),
+          feelsLike: Math.round(item.main.feels_like),
+          description: item.weather[0].description,
+          icon: item.weather[0].icon,
+          humidity: item.main.humidity,
+          windSpeed: Math.round(item.wind.speed * 10) / 10,
+          pop: Math.round((item.pop || 0) * 100),
+        };
+      });
+
+    return {
+      location: fallbackData.city.name,
+      country: fallbackData.city.country,
+      hourly,
+    };
+  }
+
+  const data = await response.json();
+
+  // Process One Call API data (hourly)
+  const hourly: HourlyWeather[] = data.hourly
+    .slice(0, Math.min(hours, 48)) // Limit to requested hours (max 48)
+    .map((item: any) => {
+      const date = new Date(item.dt * 1000);
+      return {
+        time: date.toISOString(),
+        hour: date.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }),
+        temperature: Math.round(item.temp),
+        feelsLike: Math.round(item.feels_like),
+        description: item.weather[0].description,
+        icon: item.weather[0].icon,
+        humidity: item.humidity,
+        windSpeed: Math.round(item.wind_speed * 10) / 10,
+        pop: Math.round((item.pop || 0) * 100),
+      };
+    });
+
+  return {
+    location: name,
+    country: country,
+    hourly,
+  };
 }
 

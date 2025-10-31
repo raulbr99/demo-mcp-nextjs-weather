@@ -14,9 +14,10 @@ import { ForecastCard } from "./components/ForecastCard";
 import { WeatherComparison } from "./components/WeatherComparison";
 import { LoadingSpinner } from "./components/LoadingSpinner";
 import { ErrorMessage } from "./components/ErrorMessage";
+import { HourlyForecast } from "./components/HourlyForecast";
 
 interface WeatherResult {
-  type?: "current_weather" | "forecast" | "comparison" | "error";
+  type?: "current_weather" | "forecast" | "comparison" | "hourly" | "error";
   location?: string;
   country?: string;
   temperature?: number;
@@ -40,6 +41,16 @@ interface WeatherResult {
   location2?: any;
   tempDifference?: number;
   humidityDifference?: number;
+  hourly?: Array<{
+    hour: string;
+    temperature: number;
+    feelsLike: number;
+    description: string;
+    icon: string;
+    humidity: number;
+    windSpeed: number;
+    pop: number;
+  }>;
   error?: string;
 }
 
@@ -195,6 +206,17 @@ export default function Home() {
           location2={weatherData.location2!}
           tempDifference={weatherData.tempDifference!}
           humidityDifference={weatherData.humidityDifference!}
+          units={weatherData.units}
+        />
+      );
+    }
+
+    if (weatherData.type === "hourly" && weatherData.hourly) {
+      return (
+        <HourlyForecast
+          location={weatherData.location!}
+          country={weatherData.country!}
+          hourly={weatherData.hourly}
           units={weatherData.units}
         />
       );
