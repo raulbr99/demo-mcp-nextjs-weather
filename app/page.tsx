@@ -43,15 +43,14 @@ interface WeatherResult {
 }
 
 export default function Home() {
-  const toolOutput = useWidgetProps<{
-    structuredContent?: WeatherResult;
-  }>();
+  const toolOutput = useWidgetProps<Record<string, unknown>>();
   const maxHeight = useMaxHeight() ?? undefined;
   const displayMode = useDisplayMode();
   const requestDisplayMode = useRequestDisplayMode();
   const isChatGptApp = useIsChatGptApp();
 
-  const weatherData = toolOutput?.structuredContent;
+  // The toolOutput directly contains the weather data, not under structuredContent
+  const weatherData = toolOutput as WeatherResult | null;
 
   // Debug: Log the tool output to help troubleshoot
   if (typeof window !== "undefined") {
@@ -59,10 +58,12 @@ export default function Home() {
     console.log("isChatGptApp:", isChatGptApp);
     console.log("window.openai exists:", !!window.openai);
     console.log("toolOutput:", toolOutput);
+    console.log("toolOutput FULL:", JSON.stringify(toolOutput, null, 2));
     console.log("weatherData:", weatherData);
     console.log("displayMode:", displayMode);
     if (window.openai) {
       console.log("window.openai.toolOutput:", (window.openai as any).toolOutput);
+      console.log("window.openai.toolOutput FULL:", JSON.stringify((window.openai as any).toolOutput, null, 2));
     }
     console.log("==================");
   }
