@@ -2,11 +2,18 @@ import { baseURL } from "@/baseUrl";
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 import {
-  getCurrentWeather,
-  getWeatherForecast,
-  compareWeather,
-  getHourlyForecast,
-} from "@/lib/weather-service";
+  listServices,
+  getService,
+  createBooking,
+  listBookings,
+  getBooking,
+  getAvailableSlots,
+  getTodayBookings,
+  getUpcomingBookings,
+  getBookingStats,
+  updateBooking,
+  cancelBooking,
+} from "@/lib/booking-service";
 
 const getAppsSdkCompatibleHtml = async (baseUrl: string, path: string) => {
   const result = await fetch(`${baseUrl}${path}`);
@@ -64,64 +71,76 @@ function widgetMeta(widget: ContentWidget) {
 const handler = createMcpHandler(async (server) => {
   const html = await getAppsSdkCompatibleHtml(baseURL, "/");
 
-  // Widget for current weather
-  const currentWeatherWidget: ContentWidget = {
-    id: "get_current_weather",
-    title: "Current Weather",
-    templateUri: "ui://widget/current-weather-template.html",
-    invoking: "Fetching current weather...",
-    invoked: "Weather data loaded",
+  // Widget for listing services
+  const servicesWidget: ContentWidget = {
+    id: "list_services",
+    title: "Available Services",
+    templateUri: "ui://widget/services-template.html",
+    invoking: "Loading services...",
+    invoked: "Services loaded",
     html: html,
-    description: "Displays current weather for a location",
-    widgetDomain: "https://openweathermap.org",
+    description: "Displays all available booking services",
+    widgetDomain: "turno.app",
   };
 
-  // Widget for weather forecast
-  const forecastWidget: ContentWidget = {
-    id: "get_weather_forecast",
-    title: "Weather Forecast",
-    templateUri: "ui://widget/forecast-template.html",
-    invoking: "Fetching weather forecast...",
-    invoked: "Forecast loaded",
+  // Widget for creating bookings
+  const createBookingWidget: ContentWidget = {
+    id: "create_booking",
+    title: "Create Booking",
+    templateUri: "ui://widget/create-booking-template.html",
+    invoking: "Creating booking...",
+    invoked: "Booking created",
     html: html,
-    description: "Displays weather forecast for upcoming days",
-    widgetDomain: "https://openweathermap.org",
+    description: "Create a new appointment booking",
+    widgetDomain: "turno.app",
   };
 
-  // Widget for weather comparison
-  const comparisonWidget: ContentWidget = {
-    id: "compare_weather",
-    title: "Weather Comparison",
-    templateUri: "ui://widget/comparison-template.html",
-    invoking: "Comparing weather...",
-    invoked: "Comparison ready",
+  // Widget for listing bookings
+  const bookingsWidget: ContentWidget = {
+    id: "list_bookings",
+    title: "My Bookings",
+    templateUri: "ui://widget/bookings-template.html",
+    invoking: "Loading bookings...",
+    invoked: "Bookings loaded",
     html: html,
-    description: "Compares weather between two locations",
-    widgetDomain: "https://openweathermap.org",
+    description: "View all your bookings and appointments",
+    widgetDomain: "turno.app",
   };
 
-  // Widget for hourly forecast
-  const hourlyWidget: ContentWidget = {
-    id: "get_hourly_forecast",
-    title: "Hourly Forecast",
-    templateUri: "ui://widget/hourly-template.html",
-    invoking: "Fetching hourly forecast...",
-    invoked: "Hourly forecast loaded",
+  // Widget for checking availability
+  const availabilityWidget: ContentWidget = {
+    id: "check_availability",
+    title: "Check Availability",
+    templateUri: "ui://widget/availability-template.html",
+    invoking: "Checking availability...",
+    invoked: "Availability loaded",
     html: html,
-    description: "Displays hourly weather forecast for next 24-48 hours",
-    widgetDomain: "https://openweathermap.org",
+    description: "Check available time slots for a service",
+    widgetDomain: "turno.app",
+  };
+
+  // Widget for booking details
+  const bookingDetailsWidget: ContentWidget = {
+    id: "get_booking_details",
+    title: "Booking Details",
+    templateUri: "ui://widget/booking-details-template.html",
+    invoking: "Loading booking details...",
+    invoked: "Booking details loaded",
+    html: html,
+    description: "View detailed information about a specific booking",
+    widgetDomain: "turno.app",
   };
 
   // Register resources for each widget
   server.registerResource(
-    "current-weather-widget",
-    currentWeatherWidget.templateUri,
+    "services-widget",
+    servicesWidget.templateUri,
     {
-      title: currentWeatherWidget.title,
-      description: currentWeatherWidget.description,
+      title: servicesWidget.title,
+      description: servicesWidget.description,
       mimeType: "text/html+skybridge",
       _meta: {
-        "openai/widgetDescription": currentWeatherWidget.description,
+        "openai/widgetDescription": servicesWidget.description,
         "openai/widgetPrefersBorder": true,
       },
     },
@@ -130,11 +149,11 @@ const handler = createMcpHandler(async (server) => {
         {
           uri: uri.href,
           mimeType: "text/html+skybridge",
-          text: `<html>${currentWeatherWidget.html}</html>`,
+          text: `<html>${servicesWidget.html}</html>`,
           _meta: {
-            "openai/widgetDescription": currentWeatherWidget.description,
+            "openai/widgetDescription": servicesWidget.description,
             "openai/widgetPrefersBorder": true,
-            "openai/widgetDomain": currentWeatherWidget.widgetDomain,
+            "openai/widgetDomain": servicesWidget.widgetDomain,
           },
         },
       ],
@@ -142,14 +161,14 @@ const handler = createMcpHandler(async (server) => {
   );
 
   server.registerResource(
-    "forecast-widget",
-    forecastWidget.templateUri,
+    "create-booking-widget",
+    createBookingWidget.templateUri,
     {
-      title: forecastWidget.title,
-      description: forecastWidget.description,
+      title: createBookingWidget.title,
+      description: createBookingWidget.description,
       mimeType: "text/html+skybridge",
       _meta: {
-        "openai/widgetDescription": forecastWidget.description,
+        "openai/widgetDescription": createBookingWidget.description,
         "openai/widgetPrefersBorder": true,
       },
     },
@@ -158,11 +177,11 @@ const handler = createMcpHandler(async (server) => {
         {
           uri: uri.href,
           mimeType: "text/html+skybridge",
-          text: `<html>${forecastWidget.html}</html>`,
+          text: `<html>${createBookingWidget.html}</html>`,
           _meta: {
-            "openai/widgetDescription": forecastWidget.description,
+            "openai/widgetDescription": createBookingWidget.description,
             "openai/widgetPrefersBorder": true,
-            "openai/widgetDomain": forecastWidget.widgetDomain,
+            "openai/widgetDomain": createBookingWidget.widgetDomain,
           },
         },
       ],
@@ -170,14 +189,14 @@ const handler = createMcpHandler(async (server) => {
   );
 
   server.registerResource(
-    "comparison-widget",
-    comparisonWidget.templateUri,
+    "bookings-widget",
+    bookingsWidget.templateUri,
     {
-      title: comparisonWidget.title,
-      description: comparisonWidget.description,
+      title: bookingsWidget.title,
+      description: bookingsWidget.description,
       mimeType: "text/html+skybridge",
       _meta: {
-        "openai/widgetDescription": comparisonWidget.description,
+        "openai/widgetDescription": bookingsWidget.description,
         "openai/widgetPrefersBorder": true,
       },
     },
@@ -186,11 +205,11 @@ const handler = createMcpHandler(async (server) => {
         {
           uri: uri.href,
           mimeType: "text/html+skybridge",
-          text: `<html>${comparisonWidget.html}</html>`,
+          text: `<html>${bookingsWidget.html}</html>`,
           _meta: {
-            "openai/widgetDescription": comparisonWidget.description,
+            "openai/widgetDescription": bookingsWidget.description,
             "openai/widgetPrefersBorder": true,
-            "openai/widgetDomain": comparisonWidget.widgetDomain,
+            "openai/widgetDomain": bookingsWidget.widgetDomain,
           },
         },
       ],
@@ -198,14 +217,14 @@ const handler = createMcpHandler(async (server) => {
   );
 
   server.registerResource(
-    "hourly-widget",
-    hourlyWidget.templateUri,
+    "availability-widget",
+    availabilityWidget.templateUri,
     {
-      title: hourlyWidget.title,
-      description: hourlyWidget.description,
+      title: availabilityWidget.title,
+      description: availabilityWidget.description,
       mimeType: "text/html+skybridge",
       _meta: {
-        "openai/widgetDescription": hourlyWidget.description,
+        "openai/widgetDescription": availabilityWidget.description,
         "openai/widgetPrefersBorder": true,
       },
     },
@@ -214,69 +233,99 @@ const handler = createMcpHandler(async (server) => {
         {
           uri: uri.href,
           mimeType: "text/html+skybridge",
-          text: `<html>${hourlyWidget.html}</html>`,
+          text: `<html>${availabilityWidget.html}</html>`,
           _meta: {
-            "openai/widgetDescription": hourlyWidget.description,
+            "openai/widgetDescription": availabilityWidget.description,
             "openai/widgetPrefersBorder": true,
-            "openai/widgetDomain": hourlyWidget.widgetDomain,
+            "openai/widgetDomain": availabilityWidget.widgetDomain,
           },
         },
       ],
     })
   );
 
-  // Tool: Get Current Weather
+  server.registerResource(
+    "booking-details-widget",
+    bookingDetailsWidget.templateUri,
+    {
+      title: bookingDetailsWidget.title,
+      description: bookingDetailsWidget.description,
+      mimeType: "text/html+skybridge",
+      _meta: {
+        "openai/widgetDescription": bookingDetailsWidget.description,
+        "openai/widgetPrefersBorder": true,
+      },
+    },
+    async (uri) => ({
+      contents: [
+        {
+          uri: uri.href,
+          mimeType: "text/html+skybridge",
+          text: `<html>${bookingDetailsWidget.html}</html>`,
+          _meta: {
+            "openai/widgetDescription": bookingDetailsWidget.description,
+            "openai/widgetPrefersBorder": true,
+            "openai/widgetDomain": bookingDetailsWidget.widgetDomain,
+          },
+        },
+      ],
+    })
+  );
+
+  // Tool: List Services
   server.registerTool(
-    currentWeatherWidget.id,
+    servicesWidget.id,
     {
-      title: currentWeatherWidget.title,
+      title: servicesWidget.title,
       description:
-        "Get current weather information for any city or location. Returns temperature, conditions, humidity, wind speed, and more.",
+        "Get a list of all available booking services. Returns service names, descriptions, durations, and prices.",
       inputSchema: {
-        location: z
+        category: z
           .string()
-          .describe(
-            "City name or location (e.g., 'London', 'New York', 'Tokyo')"
-          ),
-        units: z
-          .enum(["celsius", "fahrenheit"])
-          .default("celsius")
-          .describe("Temperature units to use"),
+          .optional()
+          .describe("Optional: Filter services by category"),
       },
-      _meta: widgetMeta(currentWeatherWidget),
+      _meta: widgetMeta(servicesWidget),
     },
-    async ({ location, units = "celsius" }) => {
+    async ({ category }) => {
       try {
-        const weather = await getCurrentWeather(location, units);
+        let services = await listServices();
+
+        if (category) {
+          services = services.filter((s) => s.category === category);
+        }
+
+        const servicesText = services
+          .map(
+            (s) =>
+              `${s.name}: ${s.duration} mins, $${s.price}${s.description ? ` - ${s.description}` : ""}`
+          )
+          .join("\n");
+
         const structuredData = {
-          type: "current_weather",
-          ...weather,
-          units,
+          type: "services_list",
+          services,
+          count: services.length,
         };
 
-        console.log("[MCP] Returning weather data:", structuredData);
+        console.log("[MCP] Returning services data:", structuredData);
 
         return {
           content: [
             {
               type: "text",
-              text: `Current weather in ${weather.location}, ${weather.country}:
-Temperature: ${weather.temperature}°${units === "celsius" ? "C" : "F"} (feels like ${weather.feelsLike}°${units === "celsius" ? "C" : "F"})
-Conditions: ${weather.description}
-Humidity: ${weather.humidity}%
-Wind Speed: ${weather.windSpeed} ${units === "celsius" ? "m/s" : "mph"}
-Pressure: ${weather.pressure} hPa`,
+              text: `Available Services (${services.length}):\n\n${servicesText}`,
             },
           ],
           structuredContent: structuredData,
-          _meta: widgetMeta(currentWeatherWidget),
+          _meta: widgetMeta(servicesWidget),
         };
       } catch (error) {
         return {
           content: [
             {
               type: "text",
-              text: `Error fetching weather: ${error instanceof Error ? error.message : "Unknown error"}`,
+              text: `Error fetching services: ${error instanceof Error ? error.message : "Unknown error"}`,
             },
           ],
           structuredContent: {
@@ -289,62 +338,165 @@ Pressure: ${weather.pressure} hPa`,
     }
   );
 
-  // Tool: Get Weather Forecast
+  // Tool: Create Booking
   server.registerTool(
-    forecastWidget.id,
+    createBookingWidget.id,
     {
-      title: forecastWidget.title,
+      title: createBookingWidget.title,
       description:
-        "Get weather forecast for upcoming days for any city or location. Returns daily forecasts with temperature ranges and conditions.",
+        "Create a new booking appointment for a service. Requires service ID, customer details, date, and time.",
       inputSchema: {
-        location: z
+        serviceId: z.string().describe("ID of the service to book"),
+        customerName: z.string().describe("Customer's full name"),
+        customerEmail: z.string().email().describe("Customer's email address"),
+        customerPhone: z
           .string()
-          .describe(
-            "City name or location (e.g., 'London', 'New York', 'Tokyo')"
-          ),
-        days: z
-          .number()
-          .min(1)
-          .max(7)
-          .default(5)
-          .describe("Number of forecast days (1-7)"),
-        units: z
-          .enum(["celsius", "fahrenheit"])
-          .default("celsius")
-          .describe("Temperature units to use"),
+          .optional()
+          .describe("Customer's phone number (optional)"),
+        date: z
+          .string()
+          .describe("Booking date in YYYY-MM-DD format (e.g., 2025-01-25)"),
+        time: z.string().describe("Booking time in HH:MM format (e.g., 14:00)"),
+        notes: z.string().optional().describe("Additional notes (optional)"),
       },
-      _meta: widgetMeta(forecastWidget),
+      _meta: widgetMeta(createBookingWidget),
     },
-    async ({ location, days = 5, units = "celsius" }) => {
+    async ({
+      serviceId,
+      customerName,
+      customerEmail,
+      customerPhone,
+      date,
+      time,
+      notes,
+    }) => {
       try {
-        const forecast = await getWeatherForecast(location, days, units);
-        const forecastText = forecast.forecast
+        const booking = await createBooking({
+          serviceId,
+          customerName,
+          customerEmail,
+          customerPhone,
+          date,
+          time,
+          status: "confirmed",
+          notes,
+        });
+
+        const structuredData = {
+          type: "booking_created",
+          booking,
+        };
+
+        console.log("[MCP] Booking created:", structuredData);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Booking confirmed!
+
+Customer: ${customerName}
+Email: ${customerEmail}
+Date: ${date} at ${time}
+Booking ID: ${booking.id}
+
+A confirmation email will be sent to ${customerEmail}.`,
+            },
+          ],
+          structuredContent: structuredData,
+          _meta: widgetMeta(createBookingWidget),
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error creating booking: ${error instanceof Error ? error.message : "Unknown error"}`,
+            },
+          ],
+          structuredContent: {
+            type: "error",
+            error: error instanceof Error ? error.message : "Unknown error",
+          },
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Tool: List Bookings
+  server.registerTool(
+    bookingsWidget.id,
+    {
+      title: bookingsWidget.title,
+      description:
+        "Get a list of bookings. Can filter by date, date range, or status. Use this to view upcoming appointments, past bookings, or bookings by status.",
+      inputSchema: {
+        date: z
+          .string()
+          .optional()
+          .describe("Filter by specific date (YYYY-MM-DD)"),
+        startDate: z
+          .string()
+          .optional()
+          .describe("Filter by date range start (YYYY-MM-DD)"),
+        endDate: z
+          .string()
+          .optional()
+          .describe("Filter by date range end (YYYY-MM-DD)"),
+        status: z
+          .enum(["pending", "confirmed", "cancelled", "completed"])
+          .optional()
+          .describe("Filter by booking status"),
+        upcoming: z
+          .boolean()
+          .default(false)
+          .describe("Show only upcoming bookings (next 7 days)"),
+      },
+      _meta: widgetMeta(bookingsWidget),
+    },
+    async ({ date, startDate, endDate, status, upcoming = false }) => {
+      try {
+        let bookings;
+
+        if (upcoming) {
+          bookings = await getUpcomingBookings();
+        } else {
+          bookings = await listBookings({ date, startDate, endDate, status });
+        }
+
+        const bookingsText = bookings
           .map(
-            (day) =>
-              `${day.date}: ${day.tempMin}-${day.tempMax}°${units === "celsius" ? "C" : "F"}, ${day.description}`
+            (b) =>
+              `${b.date} at ${b.time} - ${b.customerName} (${b.status})${b.serviceName ? ` - ${b.serviceName}` : ""}`
           )
           .join("\n");
 
+        const structuredData = {
+          type: "bookings_list",
+          bookings,
+          count: bookings.length,
+          filters: { date, startDate, endDate, status, upcoming },
+        };
+
+        console.log("[MCP] Returning bookings data:", structuredData);
+
         return {
           content: [
             {
               type: "text",
-              text: `${days}-day forecast for ${forecast.location}, ${forecast.country}:\n${forecastText}`,
+              text: `Bookings (${bookings.length}):\n\n${bookingsText || "No bookings found."}`,
             },
           ],
-          structuredContent: {
-            type: "forecast",
-            ...forecast,
-            units,
-          },
-          _meta: widgetMeta(forecastWidget),
+          structuredContent: structuredData,
+          _meta: widgetMeta(bookingsWidget),
         };
       } catch (error) {
         return {
           content: [
             {
               type: "text",
-              text: `Error fetching forecast: ${error instanceof Error ? error.message : "Unknown error"}`,
+              text: `Error fetching bookings: ${error instanceof Error ? error.message : "Unknown error"}`,
             },
           ],
           structuredContent: {
@@ -357,58 +509,62 @@ Pressure: ${weather.pressure} hPa`,
     }
   );
 
-  // Tool: Compare Weather
+  // Tool: Check Availability
   server.registerTool(
-    comparisonWidget.id,
+    availabilityWidget.id,
     {
-      title: comparisonWidget.title,
+      title: availabilityWidget.title,
       description:
-        "Compare current weather conditions between two different cities or locations. Shows temperature and humidity differences.",
+        "Check available time slots for a specific service on a given date. Returns list of available and unavailable times.",
       inputSchema: {
-        location1: z
+        serviceId: z.string().describe("ID of the service to check"),
+        date: z
           .string()
-          .describe("First city or location to compare"),
-        location2: z
-          .string()
-          .describe("Second city or location to compare"),
-        units: z
-          .enum(["celsius", "fahrenheit"])
-          .default("celsius")
-          .describe("Temperature units to use"),
+          .describe("Date to check availability (YYYY-MM-DD format)"),
       },
-      _meta: widgetMeta(comparisonWidget),
+      _meta: widgetMeta(availabilityWidget),
     },
-    async ({ location1, location2, units = "celsius" }) => {
+    async ({ serviceId, date }) => {
       try {
-        const comparison = await compareWeather(location1, location2, units);
-        const unitSymbol = units === "celsius" ? "C" : "F";
+        const slots = await getAvailableSlots(serviceId, date);
+        const availableSlots = slots.filter((s) => s.available);
+        const service = await getService(serviceId);
+
+        const availableTimesText = availableSlots
+          .map((s) => s.time)
+          .join(", ");
+
+        const structuredData = {
+          type: "availability",
+          serviceId,
+          serviceName: service.name,
+          date,
+          slots,
+          availableSlots,
+          availableCount: availableSlots.length,
+        };
+
+        console.log("[MCP] Returning availability data:", structuredData);
 
         return {
           content: [
             {
               type: "text",
-              text: `Weather Comparison:
+              text: `Availability for ${service.name} on ${date}:
 
-${comparison.location1.location}: ${comparison.location1.temperature}°${unitSymbol}, ${comparison.location1.description}
-${comparison.location2.location}: ${comparison.location2.temperature}°${unitSymbol}, ${comparison.location2.description}
-
-Temperature difference: ${comparison.tempDifference.toFixed(1)}°${unitSymbol}
-Humidity difference: ${comparison.humidityDifference}%`,
+Available slots (${availableSlots.length}):
+${availableTimesText || "No available slots"}`,
             },
           ],
-          structuredContent: {
-            type: "comparison",
-            ...comparison,
-            units,
-          },
-          _meta: widgetMeta(comparisonWidget),
+          structuredContent: structuredData,
+          _meta: widgetMeta(availabilityWidget),
         };
       } catch (error) {
         return {
           content: [
             {
               type: "text",
-              text: `Error comparing weather: ${error instanceof Error ? error.message : "Unknown error"}`,
+              text: `Error checking availability: ${error instanceof Error ? error.message : "Unknown error"}`,
             },
           ],
           structuredContent: {
@@ -421,72 +577,185 @@ Humidity difference: ${comparison.humidityDifference}%`,
     }
   );
 
-  // Tool: Get Hourly Forecast
+  // Tool: Get Booking Details
   server.registerTool(
-    hourlyWidget.id,
+    bookingDetailsWidget.id,
     {
-      title: hourlyWidget.title,
+      title: bookingDetailsWidget.title,
       description:
-        "Get hourly weather forecast for any city or location. Returns detailed weather data for each hour including temperature, precipitation chance, humidity, and wind speed. Perfect for planning your day.",
+        "Get detailed information about a specific booking by its ID. Returns all booking details including customer information, service details, and status.",
       inputSchema: {
-        location: z
-          .string()
-          .describe(
-            "City name or location (e.g., 'London', 'New York', 'Tokyo')"
-          ),
-        hours: z
-          .number()
-          .min(1)
-          .max(48)
-          .default(24)
-          .describe("Number of hours to forecast (1-48, default 24)"),
-        units: z
-          .enum(["celsius", "fahrenheit"])
-          .default("celsius")
-          .describe("Temperature units to use"),
+        bookingId: z.string().describe("ID of the booking to retrieve"),
       },
-      _meta: widgetMeta(hourlyWidget),
+      _meta: widgetMeta(bookingDetailsWidget),
     },
-    async ({ location, hours = 24, units = "celsius" }) => {
+    async ({ bookingId }) => {
       try {
-        const hourlyData = await getHourlyForecast(location, hours, units);
-        const unitSymbol = units === "celsius" ? "°C" : "°F";
+        const booking = await getBooking(bookingId);
 
-        // Create a summary for the text response
-        const firstFewHours = hourlyData.hourly.slice(0, 6);
-        const summary = firstFewHours
-          .map(
-            (h) =>
-              `${h.hour}: ${h.temperature}${unitSymbol}, ${h.description}${h.pop > 30 ? ` (${h.pop}% rain)` : ""}`
-          )
-          .join("\n");
+        const structuredData = {
+          type: "booking_details",
+          booking,
+        };
 
-        console.log("[MCP] Returning hourly forecast data for:", location);
+        console.log("[MCP] Returning booking details:", structuredData);
 
         return {
           content: [
             {
               type: "text",
-              text: `Hourly forecast for ${hourlyData.location}, ${hourlyData.country} (next ${hours} hours):
+              text: `Booking Details:
 
-${summary}
-${hourlyData.hourly.length > 6 ? `\n...and ${hourlyData.hourly.length - 6} more hours` : ""}`,
+ID: ${booking.id}
+Customer: ${booking.customerName}
+Email: ${booking.customerEmail}
+${booking.customerPhone ? `Phone: ${booking.customerPhone}\n` : ""}Date: ${booking.date} at ${booking.time}
+Status: ${booking.status}
+${booking.serviceName ? `Service: ${booking.serviceName}\n` : ""}${booking.notes ? `Notes: ${booking.notes}` : ""}`,
+            },
+          ],
+          structuredContent: structuredData,
+          _meta: widgetMeta(bookingDetailsWidget),
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error fetching booking details: ${error instanceof Error ? error.message : "Unknown error"}`,
             },
           ],
           structuredContent: {
-            type: "hourly",
-            ...hourlyData,
-            units,
+            type: "error",
+            error: error instanceof Error ? error.message : "Unknown error",
           },
-          _meta: widgetMeta(hourlyWidget),
+          isError: true,
         };
-      } catch (error) {
-        console.error("[MCP] Error fetching hourly forecast:", error);
+      }
+    }
+  );
+
+  // Tool: Cancel Booking
+  server.registerTool(
+    "cancel_booking",
+    {
+      title: "Cancel Booking",
+      description:
+        "Cancel an existing booking by its ID. The booking status will be updated to 'cancelled'.",
+      inputSchema: {
+        bookingId: z.string().describe("ID of the booking to cancel"),
+        reason: z
+          .string()
+          .optional()
+          .describe("Optional reason for cancellation"),
+      },
+      _meta: widgetMeta(bookingDetailsWidget),
+    },
+    async ({ bookingId, reason }) => {
+      try {
+        const booking = await cancelBooking(bookingId);
+
+        if (reason) {
+          await updateBooking(bookingId, {
+            notes: `Cancelled: ${reason}`,
+          });
+        }
+
+        const structuredData = {
+          type: "booking_cancelled",
+          booking,
+        };
+
+        console.log("[MCP] Booking cancelled:", structuredData);
+
         return {
           content: [
             {
               type: "text",
-              text: `Error fetching hourly forecast: ${error instanceof Error ? error.message : "Unknown error"}`,
+              text: `Booking cancelled successfully.
+
+Booking ID: ${booking.id}
+Customer: ${booking.customerName}
+Original date: ${booking.date} at ${booking.time}
+${reason ? `Reason: ${reason}` : ""}
+
+A cancellation email will be sent to ${booking.customerEmail}.`,
+            },
+          ],
+          structuredContent: structuredData,
+          _meta: widgetMeta(bookingDetailsWidget),
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error cancelling booking: ${error instanceof Error ? error.message : "Unknown error"}`,
+            },
+          ],
+          structuredContent: {
+            type: "error",
+            error: error instanceof Error ? error.message : "Unknown error",
+          },
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Tool: Get Booking Statistics
+  server.registerTool(
+    "get_booking_stats",
+    {
+      title: "Booking Statistics",
+      description:
+        "Get statistics about bookings including total count and breakdown by status. Can be filtered by date range.",
+      inputSchema: {
+        startDate: z
+          .string()
+          .optional()
+          .describe("Filter stats from this date (YYYY-MM-DD)"),
+        endDate: z
+          .string()
+          .optional()
+          .describe("Filter stats until this date (YYYY-MM-DD)"),
+      },
+      _meta: widgetMeta(bookingsWidget),
+    },
+    async ({ startDate, endDate }) => {
+      try {
+        const stats = await getBookingStats(startDate, endDate);
+
+        const structuredData = {
+          type: "booking_stats",
+          stats,
+          dateRange: { startDate, endDate },
+        };
+
+        console.log("[MCP] Returning booking stats:", structuredData);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Booking Statistics${startDate || endDate ? ` (${startDate || "start"} to ${endDate || "now"})` : ""}:
+
+Total bookings: ${stats.total}
+Confirmed: ${stats.confirmed}
+Pending: ${stats.pending}
+Completed: ${stats.completed}
+Cancelled: ${stats.cancelled}`,
+            },
+          ],
+          structuredContent: structuredData,
+          _meta: widgetMeta(bookingsWidget),
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error fetching statistics: ${error instanceof Error ? error.message : "Unknown error"}`,
             },
           ],
           structuredContent: {

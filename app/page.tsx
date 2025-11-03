@@ -9,48 +9,87 @@ import {
   useRequestDisplayMode,
   useIsChatGptApp,
 } from "./hooks";
-import { WeatherDisplay } from "./components/WeatherDisplay";
-import { ForecastCard } from "./components/ForecastCard";
-import { WeatherComparison } from "./components/WeatherComparison";
+import { ServiceCard } from "./components/ServiceCard";
+import { BookingCard } from "./components/BookingCard";
+import { AvailabilityDisplay } from "./components/AvailabilityDisplay";
+import { BookingStats } from "./components/BookingStats";
 import { LoadingSpinner } from "./components/LoadingSpinner";
 import { ErrorMessage } from "./components/ErrorMessage";
-import { HourlyForecast } from "./components/HourlyForecast";
 
-interface WeatherResult {
-  type?: "current_weather" | "forecast" | "comparison" | "hourly" | "error";
-  location?: string;
-  country?: string;
-  temperature?: number;
-  feelsLike?: number;
+interface Service {
+  id: string;
+  name: string;
   description?: string;
-  humidity?: number;
-  windSpeed?: number;
-  pressure?: number;
-  icon?: string;
-  units?: "celsius" | "fahrenheit";
-  forecast?: Array<{
-    date: string;
-    tempMin: number;
-    tempMax: number;
-    description: string;
-    humidity: number;
-    windSpeed: number;
-    icon: string;
-  }>;
-  location1?: any;
-  location2?: any;
-  tempDifference?: number;
-  humidityDifference?: number;
-  hourly?: Array<{
-    hour: string;
-    temperature: number;
-    feelsLike: number;
-    description: string;
-    icon: string;
-    humidity: number;
-    windSpeed: number;
-    pop: number;
-  }>;
+  duration: number;
+  price: number;
+  category?: string;
+  color?: string;
+  isActive?: boolean;
+}
+
+interface Booking {
+  id: string;
+  serviceId: string;
+  serviceName?: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  date: string;
+  time: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  notes?: string;
+}
+
+interface AvailableSlot {
+  date: string;
+  time: string;
+  available: boolean;
+}
+
+interface BookingResult {
+  type?:
+    | "services_list"
+    | "booking_created"
+    | "bookings_list"
+    | "availability"
+    | "booking_details"
+    | "booking_cancelled"
+    | "booking_stats"
+    | "error";
+
+  // Services list
+  services?: Service[];
+  count?: number;
+
+  // Single booking
+  booking?: Booking;
+
+  // Bookings list
+  bookings?: Booking[];
+  filters?: any;
+
+  // Availability
+  serviceId?: string;
+  serviceName?: string;
+  date?: string;
+  slots?: AvailableSlot[];
+  availableSlots?: AvailableSlot[];
+  availableCount?: number;
+
+  // Statistics
+  stats?: {
+    total: number;
+    confirmed: number;
+    pending: number;
+    cancelled: number;
+    completed: number;
+  };
+  dateRange?: {
+    startDate?: string;
+    endDate?: string;
+  };
+
+  // Error
   error?: string;
 }
 
@@ -61,58 +100,44 @@ export default function Home() {
   const requestDisplayMode = useRequestDisplayMode();
   const isChatGptApp = useIsChatGptApp();
 
-  // Loading state: true when in ChatGPT and waiting for data
   const [isLoading, setIsLoading] = useState(false);
+  const bookingData = toolOutput as BookingResult | null;
 
-  // The toolOutput directly contains the weather data, not under structuredContent
-  const weatherData = toolOutput as WeatherResult | null;
-
-  // Handle loading state when in ChatGPT
   useEffect(() => {
     if (isChatGptApp) {
-      // When we're in ChatGPT but don't have data yet, show loading
-      if (!weatherData) {
+      if (!bookingData) {
         setIsLoading(true);
       } else {
-        // Once data arrives, hide loading
         setIsLoading(false);
       }
     } else {
-      // Not in ChatGPT, never show loading spinner
       setIsLoading(false);
     }
-  }, [isChatGptApp, weatherData]);
+  }, [isChatGptApp, bookingData]);
 
-  // Debug: Log the tool output to help troubleshoot
+  // Debug logging
   if (typeof window !== "undefined") {
-    console.log("=== DEBUG INFO ===");
+    console.log("=== TURNO DEBUG INFO ===");
     console.log("isChatGptApp:", isChatGptApp);
-    console.log("window.openai exists:", !!window.openai);
     console.log("toolOutput:", toolOutput);
-    console.log("toolOutput FULL:", JSON.stringify(toolOutput, null, 2));
-    console.log("weatherData:", weatherData);
+    console.log("bookingData:", bookingData);
     console.log("displayMode:", displayMode);
-    if (window.openai) {
-      console.log("window.openai.toolOutput:", (window.openai as any).toolOutput);
-      console.log("window.openai.toolOutput FULL:", JSON.stringify((window.openai as any).toolOutput, null, 2));
-    }
-    console.log("==================");
+    console.log("========================");
   }
 
-  const renderWeatherContent = () => {
-    // Show loading spinner when waiting for data in ChatGPT
+  const renderContent = () => {
     if (isLoading) {
       return (
         <div className="flex flex-col items-center justify-center py-12 space-y-4">
           <LoadingSpinner />
           <p className="text-slate-600 dark:text-slate-400 text-sm">
-            Fetching weather data...
+            Loading booking data...
           </p>
         </div>
       );
     }
 
-    if (!weatherData) {
+    if (!bookingData) {
       return (
         <div className="text-center space-y-4">
           <div className="inline-block p-4 bg-blue-100 dark:bg-blue-900 rounded-full mb-4">
@@ -126,72 +151,58 @@ export default function Home() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
               />
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Weather Forecast App
+            Turno Booking System
           </h2>
           <p className="text-slate-600 dark:text-slate-400 max-w-md">
-            Ask me about the weather in any city! Try asking:
+            Manage your appointments and bookings effortlessly through ChatGPT!
           </p>
           <ul className="text-sm text-slate-600 dark:text-slate-400 space-y-2 max-w-md">
-            <li>• "What's the weather in London?"</li>
-            <li>• "Show me a 5-day forecast for Tokyo"</li>
-            <li>• "Compare weather between New York and Paris"</li>
+            <li>• "Show me available services"</li>
+            <li>• "Create a booking for [service] on [date] at [time]"</li>
+            <li>• "Show my bookings for today"</li>
+            <li>• "Check availability for [service] on [date]"</li>
+            <li>• "Show me booking statistics"</li>
           </ul>
         </div>
       );
     }
 
-    if (weatherData.type === "error") {
+    if (bookingData.type === "error") {
       return (
         <ErrorMessage
-          title="Weather Error"
-          message={weatherData.error || "An unknown error occurred"}
+          title="Booking Error"
+          message={bookingData.error || "An unknown error occurred"}
         />
       );
     }
 
-    if (weatherData.type === "current_weather") {
-      return (
-        <WeatherDisplay
-          location={weatherData.location!}
-          country={weatherData.country!}
-          temperature={weatherData.temperature!}
-          feelsLike={weatherData.feelsLike!}
-          description={weatherData.description!}
-          humidity={weatherData.humidity!}
-          windSpeed={weatherData.windSpeed!}
-          pressure={weatherData.pressure!}
-          icon={weatherData.icon!}
-          units={weatherData.units}
-        />
-      );
-    }
-
-    if (weatherData.type === "forecast" && weatherData.forecast) {
+    if (bookingData.type === "services_list" && bookingData.services) {
       return (
         <div className="space-y-6">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-              {weatherData.location}, {weatherData.country}
+              Available Services
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              {weatherData.forecast.length}-Day Forecast
+              {bookingData.count} service{bookingData.count !== 1 ? 's' : ''} available
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {weatherData.forecast.map((day, index) => (
-              <ForecastCard
-                key={index}
-                date={day.date}
-                tempMin={day.tempMin}
-                tempMax={day.tempMax}
-                description={day.description}
-                icon={day.icon}
-                units={weatherData.units}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {bookingData.services.map((service) => (
+              <ServiceCard
+                key={service.id}
+                name={service.name}
+                description={service.description}
+                duration={service.duration}
+                price={service.price}
+                category={service.category}
+                color={service.color}
+                isActive={service.isActive}
               />
             ))}
           </div>
@@ -199,25 +210,151 @@ export default function Home() {
       );
     }
 
-    if (weatherData.type === "comparison") {
+    if (bookingData.type === "booking_created" && bookingData.booking) {
       return (
-        <WeatherComparison
-          location1={weatherData.location1!}
-          location2={weatherData.location2!}
-          tempDifference={weatherData.tempDifference!}
-          humidityDifference={weatherData.humidityDifference!}
-          units={weatherData.units}
+        <div className="space-y-6">
+          <div className="text-center">
+            <div className="inline-block p-4 bg-green-100 dark:bg-green-900 rounded-full mb-4">
+              <svg
+                className="w-16 h-16 text-green-600 dark:text-green-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+              Booking Confirmed!
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400">
+              Your appointment has been successfully created
+            </p>
+          </div>
+          <BookingCard {...bookingData.booking} />
+        </div>
+      );
+    }
+
+    if (bookingData.type === "bookings_list" && bookingData.bookings) {
+      return (
+        <div className="space-y-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+              Your Bookings
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              {bookingData.count} booking{bookingData.count !== 1 ? 's' : ''} found
+            </p>
+          </div>
+          {bookingData.bookings.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {bookingData.bookings.map((booking) => (
+                <BookingCard key={booking.id} {...booking} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="inline-block p-4 bg-slate-100 dark:bg-slate-800 rounded-full mb-4">
+                <svg
+                  className="w-12 h-12 text-slate-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                No Bookings Found
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400">
+                You don't have any bookings matching the selected criteria.
+              </p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (bookingData.type === "availability" && bookingData.slots) {
+      return (
+        <AvailabilityDisplay
+          serviceName={bookingData.serviceName || "Service"}
+          date={bookingData.date || ""}
+          slots={bookingData.slots}
+          availableCount={bookingData.availableCount || 0}
         />
       );
     }
 
-    if (weatherData.type === "hourly" && weatherData.hourly) {
+    if (bookingData.type === "booking_details" && bookingData.booking) {
       return (
-        <HourlyForecast
-          location={weatherData.location!}
-          country={weatherData.country!}
-          hourly={weatherData.hourly}
-          units={weatherData.units}
+        <div className="space-y-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+              Booking Details
+            </h2>
+          </div>
+          <div className="max-w-2xl mx-auto">
+            <BookingCard {...bookingData.booking} />
+          </div>
+        </div>
+      );
+    }
+
+    if (bookingData.type === "booking_cancelled" && bookingData.booking) {
+      return (
+        <div className="space-y-6">
+          <div className="text-center">
+            <div className="inline-block p-4 bg-red-100 dark:bg-red-900 rounded-full mb-4">
+              <svg
+                className="w-16 h-16 text-red-600 dark:text-red-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+              Booking Cancelled
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400">
+              The appointment has been cancelled successfully
+            </p>
+          </div>
+          <div className="max-w-2xl mx-auto">
+            <BookingCard {...bookingData.booking} />
+          </div>
+        </div>
+      );
+    }
+
+    if (bookingData.type === "booking_stats" && bookingData.stats) {
+      return (
+        <BookingStats
+          total={bookingData.stats.total}
+          confirmed={bookingData.stats.confirmed}
+          pending={bookingData.stats.pending}
+          cancelled={bookingData.stats.cancelled}
+          completed={bookingData.stats.completed}
+          dateRange={bookingData.dateRange}
         />
       );
     }
@@ -275,11 +412,10 @@ export default function Home() {
               </svg>
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-blue-900 dark:text-blue-100 font-medium">
-                  This weather app is designed to work with ChatGPT.
+                  This booking system is designed to work with ChatGPT.
                 </p>
                 <p className="text-sm text-blue-900 dark:text-blue-100">
-                  Connect it to ChatGPT to get weather information through
-                  natural conversation.
+                  Connect it to ChatGPT to manage bookings through natural conversation.
                 </p>
               </div>
             </div>
@@ -287,32 +423,24 @@ export default function Home() {
         )}
 
         <div className="flex items-center justify-center mb-8">
-          <Image
-            className="dark:invert"
-            src="/next.svg"
-            alt="Next.js logo"
-            width={120}
-            height={26}
-            priority
-          />
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">
+              Turno
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400">
+              Smart Booking Management
+            </p>
+          </div>
         </div>
 
-        <div className="space-y-6">{renderWeatherContent()}</div>
+        <div className="space-y-6">{renderContent()}</div>
 
-        {!weatherData && (
+        {!bookingData && (
           <div className="mt-12 text-center">
             <div className="inline-flex items-center gap-4 px-6 py-3 bg-slate-100 dark:bg-slate-800 rounded-full">
               <span className="text-sm text-slate-600 dark:text-slate-400">
-                Powered by
+                Powered by Turno Booking API
               </span>
-              <a
-                href="https://openweathermap.org"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                OpenWeatherMap
-              </a>
             </div>
           </div>
         )}

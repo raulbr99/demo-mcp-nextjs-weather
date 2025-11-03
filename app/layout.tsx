@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Weather Forecast App - ChatGPT Integration",
-  description: "Get real-time weather information and forecasts through natural conversation with ChatGPT",
+  title: "Turno - Smart Booking Management",
+  description: "Manage your appointments and bookings effortlessly through ChatGPT. Book services, check availability, and manage your schedule with natural conversation.",
 };
 
 export default function RootLayout({

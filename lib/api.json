@@ -1,0 +1,1253 @@
+{
+	"info": {
+		"_postman_id": "814ca715-ce79-4139-967b-66066ce2f424",
+		"name": "Turno Booking API",
+		"description": "Complete API collection for Turno Booking System\n\n## Setup Instructions:\n1. Import this collection into Postman\n2. Import the environment file (Turno_Booking_API.postman_environment.json)\n3. Update environment variables with your credentials\n4. Test endpoints in order: signup → signin → other endpoints\n\n## Authentication:\n- Most endpoints require Bearer token (obtained from signin)\n- API Key endpoints use API keys created through the dashboard\n\nBase URL: https://xavgmcqkeqfodloknnbr.supabase.co/functions/v1/make-server-8141ccf4",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "39778475",
+		"_collection_link": "https://nanoninoalicante.postman.co/workspace/Turno-Ai~a7eb0e3d-0e26-480e-8c97-3aec26c06616/collection/39778475-814ca715-ce79-4139-967b-66066ce2f424?action=share&source=collection_link&creator=39778475"
+	},
+	"item": [
+		{
+			"name": "Public Endpoints",
+			"item": [
+				{
+					"name": "Root - API Info",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ANON_KEY}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								""
+							]
+						},
+						"description": "Get API information and list of available endpoints"
+					},
+					"response": []
+				},
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ANON_KEY}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/health",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Check API server status and connectivity"
+					},
+					"response": []
+				},
+				{
+					"name": "Environment Check",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ANON_KEY}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/debug/env",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"debug",
+								"env"
+							]
+						},
+						"description": "Debug environment variables configuration"
+					},
+					"response": []
+				},
+				{
+					"name": "Ping Test",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ANON_KEY}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/ping",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"ping"
+							]
+						},
+						"description": "Basic connectivity test"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Endpoint",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ANON_KEY}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/test",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"test"
+							]
+						},
+						"description": "Test endpoint with environment check"
+					},
+					"response": []
+				},
+				{
+					"name": "Google Calendar Test",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ANON_KEY}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/google-calendar/test",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"google-calendar",
+								"test"
+							]
+						},
+						"description": "Test Google Calendar API integration"
+					},
+					"response": []
+				}
+			],
+			"description": "Public endpoints that don't require user authentication"
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Signup - Create User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Save user ID if successful",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.user && jsonData.user.id) {",
+									"        pm.environment.set(\"USER_ID\", jsonData.user.id);",
+									"        console.log(\"User ID saved:\", jsonData.user.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"SecurePassword123!\",\n  \"name\": \"Test User\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/auth/signup",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"auth",
+								"signup"
+							]
+						},
+						"description": "Create a new user account"
+					},
+					"response": []
+				},
+				{
+					"name": "Signin - Get Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Automatically save access token to environment",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.session && jsonData.session.access_token) {",
+									"        pm.environment.set(\"ACCESS_TOKEN\", jsonData.session.access_token);",
+									"        console.log(\"Access token saved successfully\");",
+									"    }",
+									"    if (jsonData.user && jsonData.user.id) {",
+									"        pm.environment.set(\"USER_ID\", jsonData.user.id);",
+									"        console.log(\"User ID saved:\", jsonData.user.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"SecurePassword123!\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/auth/signin",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"auth",
+								"signin"
+							]
+						},
+						"description": "Sign in and get access token (automatically saved to environment)"
+					},
+					"response": []
+				}
+			],
+			"description": "User authentication endpoints"
+		},
+		{
+			"name": "Services (User Auth)",
+			"item": [
+				{
+					"name": "List Services",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/services",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"services"
+							]
+						},
+						"description": "Get all services for authenticated user"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Service",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Save service ID for later use",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.service && jsonData.service.id) {",
+									"        pm.environment.set(\"SERVICE_ID\", jsonData.service.id);",
+									"        console.log(\"Service ID saved:\", jsonData.service.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Consultation\",\n  \"description\": \"One-on-one consultation session\",\n  \"duration\": 60,\n  \"price\": 100,\n  \"category\": \"consulting\",\n  \"color\": \"#028FF5\",\n  \"isActive\": true,\n  \"requirements\": [\"ID verification\"]\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/services",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"services"
+							]
+						},
+						"description": "Create a new service"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Service",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Consultation\",\n  \"price\": 120,\n  \"duration\": 90\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/services/{{SERVICE_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"services",
+								"{{SERVICE_ID}}"
+							]
+						},
+						"description": "Update an existing service"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Service",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/services/{{SERVICE_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"services",
+								"{{SERVICE_ID}}"
+							]
+						},
+						"description": "Delete a service"
+					},
+					"response": []
+				}
+			],
+			"description": "Service management endpoints (requires user authentication)"
+		},
+		{
+			"name": "Bookings (User Auth)",
+			"item": [
+				{
+					"name": "List Bookings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/bookings",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"bookings"
+							]
+						},
+						"description": "Get all bookings for authenticated user"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Booking",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Save booking ID for later use",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.booking && jsonData.booking.id) {",
+									"        pm.environment.set(\"BOOKING_ID\", jsonData.booking.id);",
+									"        console.log(\"Booking ID saved:\", jsonData.booking.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"serviceId\": \"{{SERVICE_ID}}\",\n  \"customerName\": \"Jane Smith\",\n  \"customerEmail\": \"jane@example.com\",\n  \"customerPhone\": \"+1234567890\",\n  \"date\": \"2025-01-25\",\n  \"time\": \"14:00\",\n  \"status\": \"confirmed\",\n  \"notes\": \"First appointment\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/bookings",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"bookings"
+							]
+						},
+						"description": "Create a new booking (syncs with Google Calendar if configured)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Booking",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"cancelled\",\n  \"notes\": \"Customer requested cancellation\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/bookings/{{BOOKING_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"bookings",
+								"{{BOOKING_ID}}"
+							]
+						},
+						"description": "Update an existing booking"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Booking",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/bookings/{{BOOKING_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"bookings",
+								"{{BOOKING_ID}}"
+							]
+						},
+						"description": "Delete a booking"
+					},
+					"response": []
+				}
+			],
+			"description": "Booking management endpoints (requires user authentication)"
+		},
+		{
+			"name": "Team Members",
+			"item": [
+				{
+					"name": "List Team Members",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/team-members",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"team-members"
+							]
+						},
+						"description": "Get all team members"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Team Member",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Save member ID",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.member && jsonData.member.id) {",
+									"        pm.environment.set(\"MEMBER_ID\", jsonData.member.id);",
+									"        console.log(\"Member ID saved:\", jsonData.member.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Dr. Sarah Johnson\",\n  \"email\": \"sarah@example.com\",\n  \"role\": \"therapist\",\n  \"permissions\": [\"bookings:manage\"],\n  \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/team-members",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"team-members"
+							]
+						},
+						"description": "Add a new team member"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Team Member",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": \"senior therapist\",\n  \"permissions\": [\"bookings:manage\", \"services:manage\"]\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/team-members/{{MEMBER_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"team-members",
+								"{{MEMBER_ID}}"
+							]
+						},
+						"description": "Update team member details"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Team Member",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/team-members/{{MEMBER_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"team-members",
+								"{{MEMBER_ID}}"
+							]
+						},
+						"description": "Remove a team member"
+					},
+					"response": []
+				}
+			],
+			"description": "Team member management endpoints"
+		},
+		{
+			"name": "API Keys Management",
+			"item": [
+				{
+					"name": "List API Keys",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api-keys",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api-keys"
+							]
+						},
+						"description": "Get all API keys for the authenticated user"
+					},
+					"response": []
+				},
+				{
+					"name": "Create API Key",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Save API key for testing external endpoints",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.apiKey && jsonData.apiKey.key) {",
+									"        pm.environment.set(\"API_KEY\", jsonData.apiKey.key);",
+									"        pm.environment.set(\"API_KEY_ID\", jsonData.apiKey.id);",
+									"        console.log(\"API Key saved:\", jsonData.apiKey.key);",
+									"        console.log(\"⚠️ IMPORTANT: This is the only time you'll see the full API key!\");",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Postman Test Key\",\n  \"description\": \"API key for testing via Postman\",\n  \"permissions\": [\n    \"bookings:read\",\n    \"bookings:write\",\n    \"services:read\",\n    \"services:write\"\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api-keys",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api-keys"
+							]
+						},
+						"description": "Generate a new API key (automatically saved to environment)"
+					},
+					"response": []
+				},
+				{
+					"name": "Revoke API Key",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api-keys/{{API_KEY_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api-keys",
+								"{{API_KEY_ID}}"
+							]
+						},
+						"description": "Revoke (disable) an API key"
+					},
+					"response": []
+				},
+				{
+					"name": "Regenerate API Key",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Update API key in environment",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.newKey) {",
+									"        pm.environment.set(\"API_KEY\", jsonData.newKey);",
+									"        console.log(\"New API Key saved:\", jsonData.newKey);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api-keys/{{API_KEY_ID}}/regenerate",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api-keys",
+								"{{API_KEY_ID}}",
+								"regenerate"
+							]
+						},
+						"description": "Generate a new key value for existing API key"
+					},
+					"response": []
+				},
+				{
+					"name": "Permanently Delete API Key",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api-keys/{{API_KEY_ID}}/permanent",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api-keys",
+								"{{API_KEY_ID}}",
+								"permanent"
+							]
+						},
+						"description": "Permanently delete a revoked API key"
+					},
+					"response": []
+				}
+			],
+			"description": "API key generation and management"
+		},
+		{
+			"name": "Business Settings",
+			"item": [
+				{
+					"name": "Get Business Settings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/business-settings",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"business-settings"
+							]
+						},
+						"description": "Retrieve business configuration"
+					},
+					"response": []
+				},
+				{
+					"name": "Save Business Settings",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"settings\": {\n    \"businessName\": \"Acme Consulting\",\n    \"email\": \"info@acme.com\",\n    \"phone\": \"+1234567890\",\n    \"address\": \"123 Main St, City, State 12345\",\n    \"timezone\": \"America/New_York\",\n    \"workingHours\": {\n      \"monday\": { \"start\": \"09:00\", \"end\": \"17:00\" },\n      \"tuesday\": { \"start\": \"09:00\", \"end\": \"17:00\" },\n      \"wednesday\": { \"start\": \"09:00\", \"end\": \"17:00\" },\n      \"thursday\": { \"start\": \"09:00\", \"end\": \"17:00\" },\n      \"friday\": { \"start\": \"09:00\", \"end\": \"17:00\" }\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/business-settings",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"business-settings"
+							]
+						},
+						"description": "Update business configuration"
+					},
+					"response": []
+				}
+			],
+			"description": "Business configuration endpoints"
+		},
+		{
+			"name": "User Profile",
+			"item": [
+				{
+					"name": "Get User Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/user-profile",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user-profile"
+							]
+						},
+						"description": "Retrieve user profile and preferences"
+					},
+					"response": []
+				},
+				{
+					"name": "Save User Profile",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"profile\": {\n    \"name\": \"John Doe\",\n    \"phone\": \"+1234567890\",\n    \"avatar\": \"https://example.com/avatar.jpg\"\n  },\n  \"preferences\": {\n    \"theme\": \"dark\",\n    \"language\": \"en\",\n    \"notifications\": {\n      \"email\": true,\n      \"push\": false\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/user-profile",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user-profile"
+							]
+						},
+						"description": "Update user profile and preferences"
+					},
+					"response": []
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"currentPassword\": \"SecurePassword123!\",\n  \"newPassword\": \"NewSecurePassword456!\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/change-password",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"change-password"
+							]
+						},
+						"description": "Update user password"
+					},
+					"response": []
+				}
+			],
+			"description": "User profile and preferences management"
+		},
+		{
+			"name": "Calendar Settings",
+			"item": [
+				{
+					"name": "Get Calendar Settings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/calendar-settings",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"calendar-settings"
+							]
+						},
+						"description": "Retrieve Google Calendar integration settings"
+					},
+					"response": []
+				},
+				{
+					"name": "Save Calendar Settings",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"settings\": {\n    \"calendarId\": \"primary\",\n    \"timeZone\": \"America/New_York\",\n    \"syncEnabled\": true,\n    \"accessToken\": \"google-oauth-access-token-here\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/calendar-settings",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"calendar-settings"
+							]
+						},
+						"description": "Update calendar integration settings"
+					},
+					"response": []
+				}
+			],
+			"description": "Google Calendar integration management"
+		},
+		{
+			"name": "External API (API Key Auth)",
+			"item": [
+				{
+					"name": "API Key Status Test",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{API_KEY}}",
+								"description": "API Key (tb_...)",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api-test",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api-test"
+							]
+						},
+						"description": "Test API key authentication (use API_KEY variable)"
+					},
+					"response": []
+				},
+				{
+					"name": "List Services (API Key)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{API_KEY}}",
+								"description": "Requires services:read permission",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/services",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"services"
+							]
+						},
+						"description": "Get services using API key (requires services:read)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Service (API Key)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{API_KEY}}",
+								"description": "Requires services:write permission",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"API Created Service\",\n  \"description\": \"Service created via API key\",\n  \"duration\": 45,\n  \"price\": 75,\n  \"category\": \"api-test\",\n  \"color\": \"#FF5733\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/services",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"services"
+							]
+						},
+						"description": "Create service using API key (requires services:write)"
+					},
+					"response": []
+				},
+				{
+					"name": "List Bookings (API Key)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{API_KEY}}",
+								"description": "Requires bookings:read permission",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/bookings",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"bookings"
+							]
+						},
+						"description": "Get bookings using API key (requires bookings:read)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Booking (API Key)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{API_KEY}}",
+								"description": "Requires bookings:write permission",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"serviceId\": \"{{SERVICE_ID}}\",\n  \"customerName\": \"API Test Customer\",\n  \"customerEmail\": \"apitest@example.com\",\n  \"customerPhone\": \"+9876543210\",\n  \"date\": \"2025-02-01\",\n  \"time\": \"10:00\",\n  \"status\": \"confirmed\",\n  \"notes\": \"Booking created via API key\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/bookings",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"bookings"
+							]
+						},
+						"description": "Create booking using API key (requires bookings:write)"
+					},
+					"response": []
+				}
+			],
+			"description": "External API endpoints using API key authentication (instead of user token)"
+		}
+	],
+	"variable": [
+		{
+			"key": "BASE_URL",
+			"value": "https://xavgmcqkeqfodloknnbr.supabase.co/functions/v1/make-server-8141ccf4",
+			"type": "string"
+		}
+	]
+}
